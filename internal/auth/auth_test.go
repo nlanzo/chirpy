@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -88,5 +89,32 @@ func TestInvalidToken(t *testing.T) {
 	_, err := ValidateJWT("invalid-token", "test-secret")
 	if err == nil {
 		t.Fatalf("Expected error for invalid token")
+	}
+}
+
+// test get bearer token
+func TestGetBearerToken(t *testing.T) {
+	headers := http.Header{}
+	headers.Set("Authorization", "Bearer test-token")
+	token, err := GetBearerToken(headers)
+	if err != nil {
+		t.Fatalf("Failed to get bearer token: %v", err)
+	}
+
+	if token != "test-token" {
+		t.Fatalf("Invalid bearer token: %v", token)
+	}
+}
+
+// test get bearer token with no token
+func TestGetBearerTokenNoToken(t *testing.T) {
+	headers := http.Header{}
+	token, err := GetBearerToken(headers)
+	if err == nil {
+		t.Fatalf("Expected error for no bearer token")
+	}
+
+	if token != "" {
+		t.Fatalf("Expected empty token for no bearer token")
 	}
 }
