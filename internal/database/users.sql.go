@@ -21,7 +21,7 @@ VALUES (
     $1,
     $2
 )
-RETURNING id, created_at, updated_at, email, password_hash
+RETURNING id, created_at, updated_at, email, password_hash, is_chirpy_red
 `
 
 type CreateUserParams struct {
@@ -38,12 +38,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UpdatedAt,
 		&i.Email,
 		&i.PasswordHash,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, created_at, updated_at, email, password_hash FROM users WHERE email = $1
+SELECT id, created_at, updated_at, email, password_hash, is_chirpy_red FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -55,12 +56,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.UpdatedAt,
 		&i.Email,
 		&i.PasswordHash,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, created_at, updated_at, email, password_hash FROM users WHERE id = $1
+SELECT id, created_at, updated_at, email, password_hash, is_chirpy_red FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -72,12 +74,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.UpdatedAt,
 		&i.Email,
 		&i.PasswordHash,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
 
 const getUserFromRefreshToken = `-- name: GetUserFromRefreshToken :one
-SELECT users.id, users.created_at, users.updated_at, users.email, users.password_hash FROM users
+SELECT users.id, users.created_at, users.updated_at, users.email, users.password_hash, users.is_chirpy_red FROM users
 JOIN refresh_tokens ON users.id = refresh_tokens.user_id
 WHERE refresh_tokens.token = $1
 AND refresh_tokens.expires_at > NOW()
@@ -93,6 +96,7 @@ func (q *Queries) GetUserFromRefreshToken(ctx context.Context, token string) (Us
 		&i.UpdatedAt,
 		&i.Email,
 		&i.PasswordHash,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
@@ -101,7 +105,7 @@ const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET email = $2, password_hash = $3, updated_at = NOW()
 WHERE id = $1
-RETURNING id, email, created_at, updated_at
+RETURNING id, email, created_at, updated_at, is_chirpy_red
 `
 
 type UpdateUserParams struct {
@@ -111,10 +115,11 @@ type UpdateUserParams struct {
 }
 
 type UpdateUserRow struct {
-	ID        uuid.UUID
-	Email     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          uuid.UUID
+	Email       string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	IsChirpyRed bool
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error) {
@@ -125,6 +130,45 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsChirpyRed,
 	)
+	return i, err
+}
+
+const userAddChirpyRed = `-- name: UserAddChirpyRed :one
+UPDATE users
+SET is_chirpy_red = TRUE
+WHERE id = $1
+RETURNING id, is_chirpy_red
+`
+
+type UserAddChirpyRedRow struct {
+	ID          uuid.UUID
+	IsChirpyRed bool
+}
+
+func (q *Queries) UserAddChirpyRed(ctx context.Context, id uuid.UUID) (UserAddChirpyRedRow, error) {
+	row := q.db.QueryRowContext(ctx, userAddChirpyRed, id)
+	var i UserAddChirpyRedRow
+	err := row.Scan(&i.ID, &i.IsChirpyRed)
+	return i, err
+}
+
+const userRemoveChirpyRed = `-- name: UserRemoveChirpyRed :one
+UPDATE users
+SET is_chirpy_red = FALSE
+WHERE id = $1
+RETURNING id, is_chirpy_red
+`
+
+type UserRemoveChirpyRedRow struct {
+	ID          uuid.UUID
+	IsChirpyRed bool
+}
+
+func (q *Queries) UserRemoveChirpyRed(ctx context.Context, id uuid.UUID) (UserRemoveChirpyRedRow, error) {
+	row := q.db.QueryRowContext(ctx, userRemoveChirpyRed, id)
+	var i UserRemoveChirpyRedRow
+	err := row.Scan(&i.ID, &i.IsChirpyRed)
 	return i, err
 }

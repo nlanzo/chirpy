@@ -26,4 +26,16 @@ AND refresh_tokens.revoked_at IS NULL;
 UPDATE users
 SET email = $2, password_hash = $3, updated_at = NOW()
 WHERE id = $1
-RETURNING id, email, created_at, updated_at;
+RETURNING id, email, created_at, updated_at, is_chirpy_red;
+
+-- name: UserAddChirpyRed :one
+UPDATE users
+SET is_chirpy_red = TRUE
+WHERE id = $1
+RETURNING id, is_chirpy_red;
+
+-- name: UserRemoveChirpyRed :one
+UPDATE users
+SET is_chirpy_red = FALSE
+WHERE id = $1
+RETURNING id, is_chirpy_red;
